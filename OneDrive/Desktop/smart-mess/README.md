@@ -1,6 +1,50 @@
-# 🍱 Smart Food Mess Feedback System
+# 🍽️ Smart Mess Feedback System
 
-A full-stack QR-based feedback platform for institutional mess management.
+> A QR-based web feedback platform for hostel mess services — built for IILM University, Gurugram.
+
+---
+
+## 👨‍💻 Team Members
+
+| Name | Role |
+|------|------|
+| Abhiram Binil | Full Stack Developer & Project Lead |
+| Suyash Rawat | Frontend Developer |
+| Mayank Bisht | Backend Developer |
+| Lakshay | Testing & Documentation |
+
+---
+
+## 📌 Project Overview
+
+The **Smart Mess Feedback System** allows students to submit real-time feedback about their hostel mess through a QR code scan — no login required. Mess administrators can view analytics, manage mess locations, and get AI-driven hygiene insights from a secure dashboard.
+
+---
+
+## 🚀 Features
+
+- **QR Code Feedback** — Students scan a QR code and instantly submit feedback
+- **Star Rating System** — Ratings for Food Quality, Taste, Hygiene, and Portion Size
+- **JWT Authentication** — Secure admin login with role-based access control
+- **Role-Based Access** — Admin (full access) and Viewer (read-only) roles
+- **Analytics Dashboard** — Charts and mess rankings using Chart.js
+- **AI Hygiene Insights** — AI-driven analysis of hygiene scores per mess
+- **Spam/Duplicate Filter** — Confidence scoring to prevent fake submissions
+- **Online Users Tracker** — Admin can see who is currently active
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React + Vite |
+| Backend | FastAPI (Python) |
+| Database | MongoDB |
+| Auth | JWT (JSON Web Tokens) |
+| Charts | Chart.js |
+| QR Code | Python QR library |
+| Styling | Custom CSS |
 
 ---
 
@@ -8,144 +52,152 @@ A full-stack QR-based feedback platform for institutional mess management.
 
 ```
 smart-mess/
-├── backend/               ← FastAPI Python backend
-│   ├── main.py            ← Entry point
-│   ├── requirements.txt   ← Python packages
-│   ├── .env               ← Config (MongoDB URL, JWT secret)
+├── backend/
 │   ├── core/
-│   │   ├── database.py    ← MongoDB connection
-│   │   └── security.py    ← JWT + bcrypt
+│   │   ├── database.py        # MongoDB connection
+│   │   └── security.py        # JWT auth & password hashing
 │   ├── models/
-│   │   └── schemas.py     ← All request/response shapes
+│   │   └── schemas.py         # Pydantic data models
 │   ├── routes/
-│   │   ├── feedback.py    ← POST /api/feedback
-│   │   ├── auth.py        ← POST /api/auth/login
-│   │   ├── mess_config.py ← GET/POST /api/mess
-│   │   ├── dashboard.py   ← GET /api/dashboard
-│   │   ├── ai_insights.py ← GET /api/insights
-│   │   └── qr_code.py     ← GET /api/qr/{mess_name}
-│   └── services/
-│       ├── validator.py   ← Confidence score + duplicate check
-│       └── ai_insights.py ← Hygiene analysis logic
-│
-└── frontend/              ← React + Vite frontend
-    ├── src/
-    │   ├── main.jsx        ← React entry point
-    │   ├── App.jsx         ← Router setup
-    │   ├── index.css       ← Global styles
-    │   ├── context/
-    │   │   └── AuthContext.jsx  ← Global login state
-    │   ├── utils/
-    │   │   └── api.js      ← All API calls in one file
-    │   ├── components/
-    │   │   ├── AdminLayout.jsx  ← Sidebar + nav
-    │   │   └── StarRating.jsx   ← Star rating component
-    │   └── pages/
-    │       ├── FeedbackPage.jsx  ← Student QR form (public)
-    │       ├── LoginPage.jsx     ← Admin login
-    │       ├── DashboardPage.jsx ← Charts + analytics
-    │       ├── MessPage.jsx      ← Mess config + QR download
-    │       └── InsightsPage.jsx  ← AI hygiene insights
-    ├── index.html
-    ├── package.json
-    └── vite.config.js
+│   │   ├── auth.py            # Login, setup, online users
+│   │   ├── dashboard.py       # Analytics API
+│   │   ├── feedback.py        # Feedback submission
+│   │   ├── mess_config.py     # Mess CRUD
+│   │   ├── ai_insights.py     # AI hygiene analysis
+│   │   └── qr_code.py         # QR code generation
+│   ├── services/
+│   │   ├── ai_insights.py     # Hygiene analysis logic
+│   │   └── validator.py       # Confidence & duplicate check
+│   ├── main.py                # FastAPI app entry point
+│   └── requirements.txt
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── AdminLayout.jsx
+│   │   │   └── StarRating.jsx
+│   │   ├── context/
+│   │   │   └── AuthContext.jsx
+│   │   ├── pages/
+│   │   │   ├── FeedbackPage.jsx
+│   │   │   ├── LoginPage.jsx
+│   │   │   ├── DashboardPage.jsx
+│   │   │   ├── MessPage.jsx
+│   │   │   └── InsightsPage.jsx
+│   │   ├── utils/
+│   │   │   └── api.js
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   ├── index.html
+│   ├── package.json
+│   └── vite.config.js
+└── README.md
 ```
 
 ---
 
-## 🚀 Setup & Run
+## ⚙️ Setup & Installation
 
-### Step 1 — Start MongoDB
-Make sure MongoDB is running locally on port 27017.
-You can use MongoDB Compass to check.
+### Prerequisites
+- Python 3.10+
+- Node.js 18+
+- MongoDB (local or Atlas)
 
-### Step 2 — Backend Setup
+### Backend Setup
 
 ```bash
 cd backend
-
-# Create virtual environment
-python -m venv venv
-
-# Activate it
-# Windows:
-venv\Scripts\activate
-# Mac/Linux:
-source venv/bin/activate
-
-# Install packages
+python -m venv .venv
+.venv\Scripts\activate        # Windows
 pip install -r requirements.txt
+```
 
-# Start the server
+Create a `.env` file in the `backend/` folder:
+```env
+MONGODB_URL=mongodb://localhost:27017
+DB_NAME=smart_mess
+JWT_SECRET=your_secret_key
+JWT_ALGORITHM=HS256
+JWT_EXPIRE_HOURS=24
+```
+
+Run the backend:
+```bash
 uvicorn main:app --reload
 ```
 
-Backend runs at: http://localhost:8000
-API docs at:     http://localhost:8000/docs
-
-### Step 3 — Create First Admin Account
-
-Open Postman or any API tool and send:
-
-```
-POST http://localhost:8000/api/auth/setup
-Content-Type: application/json
-
-{
-  "email": "admin@example.com",
-  "password": "yourpassword"
-}
-```
-
-### Step 4 — Frontend Setup
+### Frontend Setup
 
 ```bash
 cd frontend
-
-# Install packages
 npm install
-
-# Start dev server
 npm run dev
 ```
 
-Frontend runs at: http://localhost:5173
+---
+
+## 🌐 URLs
+
+### Frontend
+| Page | URL |
+|------|-----|
+| Feedback Form (Public) | `http://localhost:5173/` |
+| Admin Login | `http://localhost:5173/admin/login` |
+| Dashboard | `http://localhost:5173/admin/dashboard` |
+| Mess Config | `http://localhost:5173/admin/mess` |
+| AI Insights | `http://localhost:5173/admin/insights` |
+
+### Backend API
+| Endpoint | URL |
+|----------|-----|
+| Swagger Docs | `http://127.0.0.1:8000/docs` |
+| Login | `http://127.0.0.1:8000/api/auth/login` |
+| Dashboard Data | `http://127.0.0.1:8000/api/dashboard` |
+| Submit Feedback | `http://127.0.0.1:8000/api/feedback` |
+| Mess Config | `http://127.0.0.1:8000/api/mess` |
+| AI Insights | `http://127.0.0.1:8000/api/insights` |
+| QR Code | `http://127.0.0.1:8000/api/qr/{mess_name}` |
+| Online Users | `http://127.0.0.1:8000/api/auth/online-users` |
 
 ---
 
-## 🔗 Pages
+## 🔐 User Roles
 
-| URL                         | Who sees it  | What it does               |
-|-----------------------------|-------------|----------------------------|
-| http://localhost:5173/      | Students     | QR feedback form           |
-| http://localhost:5173/?mess=MessName | Students | Form with auto-filled mess |
-| http://localhost:5173/admin/login    | Admin    | Login page                 |
-| http://localhost:5173/admin/dashboard | Admin   | Charts + analytics         |
-| http://localhost:5173/admin/mess     | Admin    | Create mess + QR download  |
-| http://localhost:5173/admin/insights | Admin    | AI hygiene insights        |
+| Role | Dashboard | Feedback View | Mess Config | AI Insights | Online Users |
+|------|-----------|--------------|-------------|-------------|--------------|
+| Admin | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Viewer | ✅ | ✅ | ❌ | ❌ | ❌ |
 
 ---
 
-## ✅ Features
+## 📊 How It Works
 
-- 📱 QR code per mess — student scans → feedback form opens
-- 🔒 Spam detection — confidence scoring (flags fast/bot submissions)
-- 🔁 Duplicate prevention — one feedback per meal per device per day
-- 📊 Admin dashboard — bar charts, rankings, recent feedback
-- 🤖 AI hygiene insights — auto recommendations per mess
-- 🔐 JWT authentication — secure admin panel
-- 📥 QR download — PNG download for printing
+1. Admin creates a mess location and generates a QR code
+2. QR code is placed at the mess entrance
+3. Students scan the QR → fill the feedback form (no login needed)
+4. System checks for duplicates and spam using confidence scoring
+5. Valid feedback is stored in MongoDB
+6. Admin views real-time analytics on the dashboard
+7. AI insights highlight hygiene issues per mess
 
 ---
 
-## 🛠️ Tech Stack
+## 📄 API Documentation
 
-| Layer     | Technology                  |
-|-----------|-----------------------------|
-| Frontend  | React 18 + Vite             |
-| Routing   | React Router v6             |
-| Charts    | Chart.js + react-chartjs-2  |
-| Backend   | FastAPI (Python)            |
-| Database  | MongoDB + Motor (async)     |
-| Auth      | JWT + bcrypt                |
-| QR        | qrcode[pil]                 |
+Full interactive API documentation available at:
+```
+http://127.0.0.1:8000/docs
+```
+
+---
+
+## 🏫 Institution
+
+**IILM University, Gurugram**
+B.Tech CSE (AI & ML) — 2nd Semester
+Innovation & Entrepreneurship Project — 2025-26
+
+---
+
+## 📜 License
+
+This project is developed for academic purposes at IILM University.
