@@ -1,17 +1,6 @@
 # 🍽️ Smart Mess Feedback System
 
-> A QR-based web feedback platform for hostel mess services — built for IILM University, Gurugram.
-
----
-
-## 👨‍💻 Team Members
-
-| Name | Role |
-|------|------|
-| Abhiram Binil | Full Stack Developer & Project Lead |
-| Suyash Rawat | Frontend Developer |
-| Mayank Bisht | Backend Developer |
-| Lakshay | Testing & Documentation |
+> A QR-based web feedback platform for hostel, cafe mess services.
 
 ---
 
@@ -45,6 +34,7 @@ The **Smart Mess Feedback System** allows students to submit real-time feedback 
 | Charts | Chart.js |
 | QR Code | Python QR library |
 | Styling | Custom CSS |
+
 
 ---
 
@@ -188,16 +178,3 @@ Full interactive API documentation available at:
 http://127.0.0.1:8000/docs
 ```
 
----
-
-## 🏫 Institution
-
-**IILM University, Gurugram**
-B.Tech CSE (AI & ML) — 2nd Semester
-Innovation & Entrepreneurship Project — 2025-26
-
----
-
-## 📜 License
-
-This project is developed for academic purposes at IILM University.
