@@ -1,27 +1,41 @@
 # ============================================================
-#  routes/qr_code.py  — Generate & stream QR code as PNG
+#  routes/qr_code.py  — QR code generation for mess locations
 # ============================================================
 
 import io
 import qrcode
-from fastapi import APIRouter, HTTPException
+import qrcode.image.svg
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
+
+from core.database import get_db
+from core.security import require_mess_staff_or_admin
 
 router = APIRouter()
 
 FRONTEND_URL = "http://localhost:5173"
 
 
-@router.get("/{mess_name}")
-async def get_qr_code(mess_name: str):
+@router.get("/{mess_id}")
+async def generate_qr(mess_id: str):
     """
-    Generates a QR code for the given mess name and returns it as a PNG image.
-    The QR encodes: http://localhost:5173/?mess=MessName
+    Generate a QR code PNG for the given mess_id.
+    The QR encodes the feedback form URL: /?mess=<mess_id>
+    This route is PUBLIC — anyone can scan without logging in.
     """
-    # Build the URL the student will land on after scanning
-    feedback_url = f"{FRONTEND_URL}/?mess={mess_name}"
+    db      = get_db()
+    # Verify mess exists
+    from bson import ObjectId
+    try:
+        mess = await db.mess.find_one({"_id": ObjectId(mess_id)})
+    except Exception:
+        mess = None
 
-    # Generate QR code image
+    if not mess:
+        raise HTTPException(status_code=404, detail="Mess not found.")
+
+    feedback_url = f"{FRONTEND_URL}/feedback?mess={mess_id}&name={mess['name']}"
+
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_H,
@@ -30,17 +44,14 @@ async def get_qr_code(mess_name: str):
     )
     qr.add_data(feedback_url)
     qr.make(fit=True)
+    img = qr.make_image(fill_color="#1A56A0", back_color="white")
 
-    img = qr.make_image(fill_color="black", back_color="white")
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
 
-    # Write image to memory buffer (no need to save to disk)
-    buffer = io.BytesIO()
-    img.save(buffer, format="PNG")
-    buffer.seek(0)
-
-    # Stream PNG back to frontend
     return StreamingResponse(
-        buffer,
+        buf,
         media_type="image/png",
-        headers={"Content-Disposition": f'attachment; filename="{mess_name}_qr.png"'},
+        headers={"Content-Disposition": f'attachment; filename="{mess["name"]}_qr.png"'},
     )

@@ -1,67 +1,83 @@
 // ============================================================
-//  utils/api.js  — All API calls in ONE place
-//  Base URL points to FastAPI backend on port 8000
+//  utils/api.js  — All backend API calls
+//  Base URL auto-detected via Vite proxy (/api → localhost:8000)
 // ============================================================
 
-const BASE = 'http://localhost:8000/api'
+const BASE = '/api'
 
-// Helper: get the JWT token stored after login
-const getToken = () => localStorage.getItem('mess_token')
-
-// Helper: build headers (with or without auth token)
-const headers = (auth = false) => ({
-  'Content-Type': 'application/json',
-  ...(auth ? { Authorization: `Bearer ${getToken()}` } : {}),
-})
-
-// Helper: handle fetch response — throws error with message if not OK
-async function handle(res) {
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.detail || 'Something went wrong')
+// ── Helper: add auth token to headers ────────────────────────
+function authHeaders() {
+  const token = localStorage.getItem('mess_token')
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }
-  return res.json()
 }
 
-// ── Public APIs (no login needed) ───────────────────────────
+// ── Generic fetch wrapper ─────────────────────────────────────
+async function req(method, path, body = null, isForm = false) {
+  const opts = { method, headers: isForm ? { Authorization: authHeaders().Authorization } : authHeaders() }
+  if (body && !isForm) opts.body = JSON.stringify(body)
+  if (body &&  isForm) opts.body = body   // FormData
 
-export const submitFeedback = (data) =>
-  fetch(`${BASE}/feedback`, { method: 'POST', headers: headers(), body: JSON.stringify(data) })
-    .then(handle)
+  const res = await fetch(BASE + path, opts)
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.detail || `Error ${res.status}`)
+  return data
+}
 
-export const getAllMess = () =>
-  fetch(`${BASE}/mess`).then(handle)
+// ── Auth ──────────────────────────────────────────────────────
+export const login          = (email, password)  => req('POST', '/auth/login',        { email, password })
+export const register       = (form)             => req('POST', '/auth/register',      form)
+export const logout         = ()                 => req('POST', '/auth/logout')
+export const getMe          = ()                 => req('GET',  '/auth/me')
+export const setupAdmin     = (email, password)  => req('POST', '/auth/setup',         { email, password })
+export const createStaff    = (data)             => req('POST', '/auth/create-staff',  data)
+export const listStaff      = ()                 => req('GET',  '/auth/staff-list')
+export const getOnlineUsers = ()                 => req('GET',  '/auth/online-users')
 
-export const getQRCode = (messName) =>
-  `${BASE}/qr/${encodeURIComponent(messName)}`  // Returns URL string (used in <img src>)
+// ── Mess ──────────────────────────────────────────────────────
+export const getAllMess  = ()     => req('GET',    '/mess')
+export const createMess = (data) => req('POST',   '/mess', data)
+export const deleteMess = (id)   => req('DELETE', `/mess/${id}`)
 
-// ── Auth APIs ────────────────────────────────────────────────
+// ── Questions ─────────────────────────────────────────────────
+export const getTodaysQuestions = (mealType = 'All') => req('GET', `/questions/today?meal_type=${mealType}`)
+export const getAllQuestions     = ()                  => req('GET',  '/questions/all')
+export const addQuestion         = (data)             => req('POST', '/questions', data)
+export const updateQuestion      = (id, data)         => req('PUT',  `/questions/${id}`, data)
+export const deleteQuestion      = (id)               => req('DELETE', `/questions/${id}`)
 
-export const login = (email, password) =>
-  fetch(`${BASE}/auth/login`, {
-    method: 'POST', headers: headers(),
-    body: JSON.stringify({ email, password }),
-  }).then(handle)
+// ── Feedback ──────────────────────────────────────────────────
+export const submitFeedback  = (data) => req('POST', '/feedback',       data)
+export const getMyHistory    = ()     => req('GET',  '/feedback/my-history')
+export const getAllFeedback   = ()     => req('GET',  '/feedback/all')
+export const uploadImage     = (file) => {
+  const fd = new FormData(); fd.append('file', file)
+  return req('POST', '/feedback/upload-image', fd, true)
+}
 
-export const setupAdmin = (email, password) =>
-  fetch(`${BASE}/auth/setup`, {
-    method: 'POST', headers: headers(),
-    body: JSON.stringify({ email, password }),
-  }).then(handle)
+// ── Tokens ────────────────────────────────────────────────────
+export const getMyTokens     = ()                   => req('GET',  '/tokens/my')
+export const redeemReward    = (milestone)          => req('POST', '/tokens/redeem',     { milestone })
+export const adjustTokens    = (data)               => req('POST', '/tokens/adjust',     data)
+export const getLeaderboard  = ()                   => req('GET',  '/tokens/leaderboard')
+export const getAllUsersTokens = ()                  => req('GET',  '/tokens/all-users')
 
-// ── Admin APIs (token required) ──────────────────────────────
+// ── Dashboard ─────────────────────────────────────────────────
+export const getDashboard = () => req('GET', '/dashboard')
 
-export const getDashboard = () =>
-  fetch(`${BASE}/dashboard`, { headers: headers(true) }).then(handle)
+// ── AI Insights ───────────────────────────────────────────────
+export const getInsights    = ()     => req('GET',  '/insights')
+export const sendReport     = (data) => req('POST', '/insights/send-report', data)
 
-export const getInsights = () =>
-  fetch(`${BASE}/insights`, { headers: headers(true) }).then(handle)
-
-export const createMess = (name, institution) =>
-  fetch(`${BASE}/mess`, {
-    method: 'POST', headers: headers(true),
-    body: JSON.stringify({ name, institution }),
-  }).then(handle)
-
-export const deleteMess = (id) =>
-  fetch(`${BASE}/mess/${id}`, { method: 'DELETE', headers: headers(true) }).then(handle)
+// ── QR Code (returns blob URL) ────────────────────────────────
+export async function getQrUrl(messId) {
+  const token = localStorage.getItem('mess_token')
+  const res = await fetch(`${BASE}/qr/${messId}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+  if (!res.ok) throw new Error('QR generation failed')
+  const blob = await res.blob()
+  return URL.createObjectURL(blob)
+}
